@@ -5,6 +5,9 @@ import {generatePrompt} from '../utils';
 import {streamRequest, loadFileVector, loadWebVector, loadTextVector} from '../utils/langchain';
 import {request} from '../utils/request';
 
+// 更新默认API密钥
+const API_KEY: string = vscode.workspace.getConfiguration('catgpt').get('apiKey') || '11f48045d403f6a2894e7b87b61477a6';
+
 /** 登录BUC */
 export const handleLogin = async (context: vscode.ExtensionContext) => {
   const AUTH_URL = 'https://fl-fastai.pre-fc.alibaba-inc.com//#/catgpt/auth'; //验证地址

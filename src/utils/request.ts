@@ -7,18 +7,17 @@ import {StreamRequestCbParams} from '../@types/utils';
 import './fetch-polyfill';
 
 const config = vscode.workspace.getConfiguration('catgpt'); //vscode配置
-const MODEL_NAME: string = config.get('modelName') || 'gpt-3.5-turbo'; //模型
-const API_KEY: string = config.get('apiKey') || ''; //秘钥
-const BASE_PATH: string = config.get('basePath') || ''; //代理
+const API_KEY: string = config.get('apiKey') || '11f48045d403f6a2894e7b87b61477a6'; //秘钥
+const BASE_URL: string = 'https://idealab.alibaba-inc.com/api/openai/v1'; //API地址
 
 /** 普通请求 */
 export const request = async (params: any, cb?: (params: StreamRequestCbParams) => void) => {
   try {
     const response = await axios({
-      url: BASE_PATH + '/chat/completions',
+      url: BASE_URL + '/chat/completions',
       method: 'post',
       data: JSON.stringify({
-        model: MODEL_NAME,
+        model: 'qwen2-72b-instruct',
         frequency_penalty: 0,
         presence_penalty: 0,
         max_tokens: 2048,
@@ -45,10 +44,10 @@ export const streamRequest = async (params: any, cb: (params: StreamRequestCbPar
   const cancelToken = axios.CancelToken.source(); //中断标识
   try {
     const response = await axios({
-      url: BASE_PATH + '/chat/completions',
+      url: BASE_URL + '/chat/completions',
       method: 'post',
       data: JSON.stringify({
-        model: MODEL_NAME,
+        model: 'qwen2-72b-instruct',
         frequency_penalty: 0,
         presence_penalty: 0,
         max_tokens: 2048,
@@ -66,38 +65,40 @@ export const streamRequest = async (params: any, cb: (params: StreamRequestCbPar
     });
 
     //流式输出
-    let content = '',
-      section = '',
-      index = 0,
-      temp = '';
+    let content = '';
     response.data.on('data', (data: Buffer) => {
       const lines = data
-        ?.toString()
-        ?.split('\n')
+        .toString()
+        .split('\n')
         .filter(line => line.trim() !== '');
+      
       for (const line of lines) {
-        index++;
-        let message = line.replace(/^data: /, '');
-        if (!message || message === '[DONE]') break;
-        if (index === 2) {
-          temp = message;
-          break;
+        if (!line || line === '[DONE]') continue;
+        
+        let message = line;
+        if (line.startsWith("data: ")) {
+          message = line.substring(6);
         }
-        if (index === 3) message = temp + message;
+
         try {
-          const obj = JSON.parse(message);
-          section = get(obj, 'choices[0].delta.content', '');
-          content += section;
-          cb({content, section, done: false});
+          const jsonData = JSON.parse(message);
+          if ('choices' in jsonData && jsonData.choices.length > 0) {
+            const delta = jsonData.choices[0].delta;
+            if (delta && 'content' in delta) {
+              const section = delta.content;
+              content += section;
+              cb({content, section, done: false});
+            }
+          }
         } catch (e) {
-          console.error('流式解析错误: ' + e);
+          console.error('流式解析错误:', e);
         }
       }
     });
 
     //输出结束
     response.data.on('end', () => {
-      cb({content, section, done: true});
+      cb({content, section: '', done: true});
     });
   } catch (e) {
     console.error('流式请求错误: ' + e);

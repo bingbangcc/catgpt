@@ -1,8 +1,6 @@
 /** @format */
 
 import * as vscode from 'vscode';
-import {ChatOpenAI} from 'langchain/chat_models/openai';
-import {ChatGlm6BLLM} from './chat-models/chatglm-6b';
 import {OpenAIEmbeddings} from 'langchain/embeddings/openai';
 import {RetrievalQAChain} from 'langchain/chains';
 import {MemoryVectorStore} from 'langchain/vectorstores/memory';
@@ -15,22 +13,14 @@ import {CheerioWebBaseLoader} from 'langchain/document_loaders/web/cheerio';
 import {isDirectory, isFile} from './index';
 import {StreamRequestCbParams} from '../@types/utils';
 import './fetch-polyfill';
+import {Qwen2Model} from './chat-models/qwen2-model';
 
 const config = vscode.workspace.getConfiguration('catgpt'); //vscode配置
-const MODEL_NAME: string = config.get('modelName') || 'gpt-3.5-turbo'; //模型类型
-const API_KEY: string = config.get('apiKey') || ''; //秘钥
+const API_KEY: string = config.get('apiKey') || '11f48045d403f6a2894e7b87b61477a6'; //秘钥
 const BASE_PATH: string = config.get('basePath') || ''; //代理
 
 //模型
-let model;
-if (MODEL_NAME === 'ChatGLM-6B') {
-  model = new ChatGlm6BLLM({temperature: 0});
-} else {
-  model = new ChatOpenAI(
-    {openAIApiKey: API_KEY, modelName: MODEL_NAME, temperature: 0, streaming: true},
-    {basePath: BASE_PATH},
-  );
-}
+const model = new Qwen2Model({apiKey: API_KEY});
 
 //向量库
 const vectorStore: MemoryVectorStore = new MemoryVectorStore(
@@ -41,25 +31,7 @@ const chain: RetrievalQAChain = RetrievalQAChain.fromLLM(model, vectorStore.asRe
 
 /** 流式请求 */
 export const streamRequest = async (input: string, cb: (params: StreamRequestCbParams) => void) => {
-  const controller = new AbortController();
-
-  let content = '';
-  chain
-    .call({input, signal: controller.signal}, [
-      {
-        handleLLMNewToken(section: string) {
-          content += section;
-          cb({content, section, done: false});
-        },
-      },
-    ])
-    .then((result: any) => cb({content: result.text, section: '', done: true}))
-    .catch(e => {
-      console.error(e);
-      cb({content: '异常: ' + e, section: '异常: ' + e, done: true});
-    });
-
-  return controller;
+  return model.streamRequest(input, cb);
 };
 
 /** 加载文件向量 */

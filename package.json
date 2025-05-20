@@ -198,25 +198,26 @@
           "type": "string",
           "description": "模型名称",
           "enum": [
+            "qwen2-72b-instruct",
             "gpt-3.5-turbo",
             "gpt-4",
             "CodeGeeX2-6B",
             "ChatGLM2-6B"
           ],
           "order": 1,
-          "default": "gpt-3.5-turbo"
+          "default": "qwen2-72b-instruct"
         },
         "catgpt.apiKey": {
           "type": "string",
           "description": "秘钥",
           "order": 2,
-          "default": ""
+          "default": "11f48045d403f6a2894e7b87b61477a6"
         },
         "catgpt.basePath": {
           "type": "string",
           "description": "代理地址",
           "order": 3,
-          "default": "https://ai.xrender.fun/proxy/v1"
+          "default": "https://idealab.alibaba-inc.com/api/openai/v1"
         },
         "catgpt.aiNickname": {
           "type": "string",
