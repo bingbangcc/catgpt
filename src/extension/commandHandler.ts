@@ -3,7 +3,6 @@
 import * as vscode from 'vscode';
 import {generatePrompt} from '../utils';
 import {streamRequest, loadFileVector, loadWebVector, loadTextVector} from '../utils/langchain';
-import {request} from '../utils/request';
 
 // 更新默认API密钥
 const API_KEY: string = vscode.workspace.getConfiguration('catgpt').get('apiKey') || '11f48045d403f6a2894e7b87b61477a6';
@@ -97,10 +96,6 @@ export const handleEditInsert = async (editor: vscode.TextEditor, prompt: string
     async (progress, token) => {
       if (insertType === 'stream') {
         await streamInsert(token);
-      } else {
-        const genCode = await request({messages: [{role: 'user', content: prompt}]});
-        if (token.isCancellationRequested) return;
-        editor.edit(editBuilder => editBuilder.insert(position.translate(1, 0), genCode));
       }
     },
   );
